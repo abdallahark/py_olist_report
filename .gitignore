@@ -1,0 +1,11 @@
+# 1. Virtual Environment
+/venv/
+/env/
+/.venv/
+
+# 2. Data
+# Ignores the entire data folder.
+/data/
+
+# 3. Python Cache
+__pycache__/
