@@ -200,20 +200,19 @@ if df is not None:
     )
 
     fig_revenue.update_layout(
-        plot_bgcolor="#343437", 
+        plot_bgcolor="#8eb2eb", 
         paper_bgcolor="#101010",
-        font=dict(color="#1C78D5", size=14),
-        title_x=0.5,
+        font=dict(color="#1C78D5", size=14)
     )
 
 
     fig_revenue.update_xaxes(
-        title_font=dict(color="#1C78D5"),
-        tickfont=dict(color="#1C78D5")
+        title_font=dict(color="#8eb2eb"),
+        tickfont=dict(color="#8eb2eb")
     )
     fig_revenue.update_yaxes(
-        title_font=dict(color="#1C78D5"),
-        tickfont=dict(color="#1C78D5")
+        title_font=dict(color="#8eb2eb"),
+        tickfont=dict(color="#8eb2eb")
     )
     fig_revenue.update_traces(line_color="#1C78D5") 
 
@@ -226,23 +225,21 @@ if df is not None:
         filtered_df=reviews_df
         review_counts = filtered_df['review_score'].value_counts().sort_index()
         fig_reviews = px.bar(review_counts, x=review_counts.index, y=review_counts.values,
-                            title="Distribution of Customer Review Scores",
                             labels={'index': 'Review Score', 'y': 'Number of Orders'},text_auto=True)
         
         fig_reviews.update_layout(
-            plot_bgcolor="#7f8298", 
-            paper_bgcolor="#7f8298",
-            font=dict(color="#1C78D5", size=16),
-            title_x=0.5,
+            plot_bgcolor="#5c6bdf", 
+            paper_bgcolor="#1a1a1c",
+            font=dict(color="#1C78D5", size=16)
         )
 
         fig_reviews.update_xaxes(
-            title_font=dict(color="#1C78D5"),
-            tickfont=dict(color="#1C78D5")
+            title_font=dict(color="#8eb2eb"),
+            tickfont=dict(color="#8eb2eb"),
         )
         fig_reviews.update_yaxes(
-            title_font=dict(color="#1C78D5"),
-            tickfont=dict(color="#1C78D5")
+            title_font=dict(color="#8eb2eb"),
+            tickfont=dict(color="#8eb2eb")
         )
         
         st.plotly_chart(fig_reviews, width='stretch')
@@ -252,22 +249,20 @@ if df is not None:
         orders_reviews_df=orders_df.merge(reviews_df,on='order_id',how='left')
         avg_delivery_by_score = orders_reviews_df.groupby(orders_reviews_df['review_score'])['delivery_time_days'].mean().reset_index()
         fig_delivery_review = px.bar(avg_delivery_by_score, x='review_score', y='delivery_time_days',
-                                title="Avg. Delivery Time by Review Score",
                                 labels={'review_score': 'Review Score', 'delivery_time_days': 'Average Delivery Time (Days)'})
         
         fig_delivery_review.update_layout(
-            plot_bgcolor="#7f8298", 
-            paper_bgcolor="#7f8298",
-            font=dict(color="#1C78D5", size=14),
-            title_x=0.5,
+            plot_bgcolor="#5f71f9", 
+            paper_bgcolor="#1A1A1D",
+            font=dict(color="#1C78D5", size=14)
         )
         fig_delivery_review.update_xaxes(
-            title_font=dict(color="#1C78D5"),
-            tickfont=dict(color="#1C78D5")
+            title_font=dict(color="#8eb2eb"),
+            tickfont=dict(color="#8eb2eb")
         )
         fig_delivery_review.update_yaxes(
-            title_font=dict(color="#1C78D5"),
-            tickfont=dict(color="#1C78D5")
+            title_font=dict(color="#8eb2eb"),
+            tickfont=dict(color="#8eb2eb")
         )
         
         st.plotly_chart(fig_delivery_review, width='stretch')
