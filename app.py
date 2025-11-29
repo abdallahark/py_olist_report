@@ -6,7 +6,6 @@ import os
 import glob
 import plotly.graph_objects as go
 
-
 st.set_page_config(
     page_title="Olist E-commerce Analysis",
     page_icon="later",
@@ -14,39 +13,28 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 ######################################################################
+def format_numbers(value, decimals=0):
+    abs_v = abs(value)
+
+    if abs_v >= 1_000_000:
+        value /= 1_000_000
+        suffix = "M"
+    elif abs_v >= 1_000:
+        value /= 1_000
+        suffix = "K"
+    else:
+        suffix = ""
+
+    num_str = f"{value:.{decimals}f}".rstrip("0").rstrip(".")
+    return f" {num_str}{suffix}"
+######################################################################
 # metric styling
-st.markdown("""
-<style>
-.metric-card {
-    background: linear-gradient(135deg, #0f172a, #1f2937);
-    padding: 18px 16px;
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(148, 163, 184, 0.35);
-    text-align: center;                
-}
+def load_css(file_path):
+    with open(file_path, "r") as f:
+        css = f.read()
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
-.metric-label {
-    font-size: 0.1.2rem;
-    color: #1f6decff;
-    font-weight: 500;
-}
-
-.metric-value {
-    font-size: 1.8rem;
-    color: #1f6decff;  /* main number color */
-    font-weight: 700;
-    margin-top: 4px;
-}
-
-.metric-delta {
-    font-size: 0.9rem;
-    margin-top: 4px;
-    color: #10B981;  /* delta color */
-}
-</style>
-""", unsafe_allow_html=True)
-
+load_css("src/css/styles.css")
 ######################################################################
 
 DATA_DIR='dataframe'
@@ -86,9 +74,11 @@ if df is not None:
     payments_df=df['order_payments']
     products_df=df['products']
     order_items_df=df['order_items']
+    geolocation_df=df['geolocation']
+    orders_customers_df=pd.merge(orders_df,customers_df,on='customer_id',how='left')
     
     st.sidebar.header('filters')
-        #filtering by years
+#filtering by years:
     years= sorted(orders_df['purchase_year'].unique())
     selected_years=st.sidebar.multiselect(
         "selected years",
@@ -98,34 +88,35 @@ if df is not None:
     if selected_years:
         selected_years_df=orders_df[orders_df['purchase_year'].isin(selected_years)]
         selected_years_ids=selected_years_df['order_id'].unique()
+        
         # fitering dataframes on selected years
-        orders_df=orders_df[orders_df['order_id'].isin(selected_years_ids)]
+        orders_customers_df=orders_customers_df[orders_customers_df['order_id'].isin(selected_years_ids)]
         reviews_df=reviews_df[reviews_df['order_id'].isin(selected_years_ids)]
         payments_df=payments_df[payments_df['order_id'].isin(selected_years_ids)]
 
-        #filtering by customer states
-    customer_state= sorted(customers_df['customer_state'].unique())
+#filtering by customer states:
+    customer_state= sorted(orders_customers_df['customer_state'].unique())
     selected_states=st.sidebar.multiselect(
         "selected customers states",
         options=customer_state,
-        default=customer_state[:5]
+        #default=customer_state[:5]
     )
     if selected_states:
-        selected_states_df=customers_df[customers_df['customer_state'].isin(selected_states)]
-        customerbystate_ids=selected_states_df['customer_id'].unique()
-        orderbystate_df=orders_df[orders_df['customer_id'].isin(customerbystate_ids)]
-        orderbystate_ids=orderbystate_df['order_id'].unique()
-        # fitering dataframes on selected category
-        orders_df=orders_df[orders_df['order_id'].isin(orderbystate_ids)]
+        selected_states_df=orders_customers_df[orders_customers_df['customer_state'].isin(selected_states)]
+        orderbystate_ids=selected_states_df['order_id'].unique()
+
+        # fitering dataframes on selected customer state
+        orders_customers_df=orders_customers_df[orders_customers_df['order_id'].isin(orderbystate_ids)]
         reviews_df=reviews_df[reviews_df['order_id'].isin(orderbystate_ids)]
-        payments_df=payments_df[payments_df['order_id'].isin(orderbystate_ids)] 
-    #by categories filter
+        payments_df=payments_df[payments_df['order_id'].isin(orderbystate_ids)]
+
+#Filtering by product category:
     # Get a sorted list of unique categories for the dropdown
     all_categories = sorted(products_df['product_category_name_english'].unique())
     selected_categories = st.sidebar.multiselect(
         "Select Product Categories",
         options=all_categories,
-        default=all_categories[:5]
+        default=all_categories[:10]
     )
 
     if selected_categories:
@@ -135,51 +126,68 @@ if df is not None:
         selected_order_ids=selected_items['order_id'].unique()
 
         # fitering dataframes on selected category
-        orders_df=orders_df[orders_df['order_id'].isin(selected_order_ids)]
+        orders_customers_df=orders_customers_df[orders_customers_df['order_id'].isin(selected_order_ids)]
         reviews_df=reviews_df[reviews_df['order_id'].isin(selected_order_ids)]
         payments_df=payments_df[payments_df['order_id'].isin(selected_order_ids)]
 
-    ###################################
-    # KPIs measures
-    st.header('Key Performance Indicator (KPIs)')
-    total_revenue= payments_df['payment_value'].sum()
-    total_orders= orders_df['order_id'].nunique()
+###################################
+# KPIs measures
+    st.header('Executive Summary ')
+    total_orders= orders_customers_df['order_id'].nunique()
+    total_Customers=orders_customers_df['customer_unique_id'].nunique()
     avg_review_score=reviews_df['review_score'].mean()
+    ontime_delivery_rate=(orders_customers_df['order_status']=='delivered').mean()*100
+    total_revenue= payments_df['payment_value'].sum()
 
     ## KPIs cards 
-    col1, col2, col3 = st.columns(3)
-
+    col1, col2, col3, col4, col5 = st.columns(5)
+ 
     with col1:
         st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Total Revenue</div>
-                <div class="metric-value">$ {total_revenue:,.2f}</div>
+                <div class="metric-label">Total Orders</div>
+                <div class="metric-value">{format_numbers(total_orders)}</div>
             </div>
         """, unsafe_allow_html=True)
 
     with col2:
         st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Total Orders</div>
-                <div class="metric-value">{total_orders:,}</div>
+                <div class="metric-label">total customers</div>
+                  <div class="metric-value">{format_numbers(total_Customers)}</div>
             </div>
         """, unsafe_allow_html=True)
-
+    
     with col3:
         st.markdown(f"""
             <div class="metric-card">
+                <div class="metric-label">On-time Delivery</div>
+                <div class="metric-value">{ontime_delivery_rate:.2f} %</div>
+            </div>
+        """, unsafe_allow_html=True)
+       
+    with col4:
+        st.markdown(f"""
+            <div class="metric-card">
                 <div class="metric-label">Average Review Score</div>
-                <div class="metric-value">{avg_review_score:,.2f}</div>
+                <div class="metric-value">{format_numbers(avg_review_score,2)}</div>
+            </div>
+        """, unsafe_allow_html=True)
+               
+    with col5:
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">Average Review Score</div>
+                <div class="metric-value">{format_numbers(total_revenue,2)}</div>
             </div>
         """, unsafe_allow_html=True)
 
 ###############################################################################################33
 ################################################################################################333
-
-    st.header('detailed analysis')
+ 
     st.subheader('Monthly Revenue Trend')
     filtered_df= orders_df.merge(payments_df,on='order_id',how='left')
-    monthly_revenue = filtered_df.set_index('order_purchase_timestamp').groupby(pd.Grouper(freq='M'))['payment_value'].sum().reset_index()
+    monthly_revenue = filtered_df.set_index('order_purchase_timestamp').groupby(pd.Grouper(freq='ME'))['payment_value'].sum().reset_index()
     monthly_revenue['order_purchase_timestamp'] = monthly_revenue['order_purchase_timestamp'].dt.strftime('%Y-%m')
 
     fig_revenue = px.line(
@@ -209,7 +217,7 @@ if df is not None:
     )
     fig_revenue.update_traces(line_color="#1C78D5") 
 
-    st.plotly_chart(fig_revenue, use_container_width=True, theme=None)
+    st.plotly_chart(fig_revenue, width='stretch', theme=None)
 
     col5, col6 = st.columns(2)
 
@@ -237,7 +245,7 @@ if df is not None:
             tickfont=dict(color="#1C78D5")
         )
         
-        st.plotly_chart(fig_reviews, use_container_width=True)
+        st.plotly_chart(fig_reviews, width='stretch')
             
     with col6:
         st.subheader("Review Score vs. Delivery Time")
@@ -262,9 +270,64 @@ if df is not None:
             tickfont=dict(color="#1C78D5")
         )
         
-        st.plotly_chart(fig_delivery_review, use_container_width=True)
+        st.plotly_chart(fig_delivery_review, width='stretch')
 
 
-    st.dataframe(orders_df.head())
+    # Merge customers with geolocation by zip code prefix
+    geo_zip = (
+     geolocation_df
+     .groupby('geolocation_zip_code_prefix', as_index=False)
+     .agg(
+        geolocation_lat=('geolocation_lat', 'mean'),
+        geolocation_lng=('geolocation_lng', 'mean'),
+        geolocation_city=('geolocation_city', 'first'),
+        geolocation_state=('geolocation_state', 'first'),
+        )
+    )
+
+    orders_customers_geo = orders_customers_df.merge(
+        geo_zip,
+        left_on='customer_zip_code_prefix',
+        right_on='geolocation_zip_code_prefix',
+        how='left'
+    )
+    orders_by_location = (
+        orders_customers_geo
+        .groupby(['geolocation_lat', 'geolocation_lng', 'geolocation_city', 'geolocation_state'])
+        .agg(
+         total_orders=('order_id', 'nunique')
+        )
+        .reset_index()
+    )
+
+    orders_by_location = orders_by_location.dropna(subset=['geolocation_lat', 'geolocation_lng'])
+    orders_by_location['geolocation_lat'] = orders_by_location['geolocation_lat'].astype(float)
+    orders_by_location['geolocation_lng'] = orders_by_location['geolocation_lng'].astype(float)
+
+    center_lat = orders_by_location['geolocation_lat'].mean()
+    center_lon = orders_by_location['geolocation_lng'].mean()
+
+    fig_map = px.scatter_mapbox(
+        orders_by_location,
+        lat="geolocation_lat",
+        lon="geolocation_lng",
+        size="total_orders",
+        color="total_orders",
+        hover_name="geolocation_city",
+        hover_data={"total_orders": True, "geolocation_state": True},
+        zoom=4,
+        height=500,
+        color_continuous_scale="Viridis",
+    )
+
+    fig_map.update_layout(
+        mapbox_style="open-street-map",
+        mapbox_center={"lat": center_lat, "lon": center_lon},
+        margin=dict(l=0, r=0, t=40, b=0),
+        title="Orders by Customer Location",
+    )
+
+    st.plotly_chart(fig_map, use_container_width=True, theme=None)
+
 else:
     print("dataframes are not loaded correctly no data to process")
