@@ -230,7 +230,7 @@ if df is not None:
         fig_reviews.update_layout(
             plot_bgcolor="#5c6bdf", 
             paper_bgcolor="#1a1a1c",
-            font=dict(color="#1C78D5", size=16)
+            font=dict(color="#1B2426", size=16)
         )
 
         fig_reviews.update_xaxes(
@@ -249,12 +249,12 @@ if df is not None:
         orders_reviews_df=orders_df.merge(reviews_df,on='order_id',how='left')
         avg_delivery_by_score = orders_reviews_df.groupby(orders_reviews_df['review_score'])['delivery_time_days'].mean().reset_index()
         fig_delivery_review = px.bar(avg_delivery_by_score, x='review_score', y='delivery_time_days',
-                                labels={'review_score': 'Review Score', 'delivery_time_days': 'Average Delivery Time (Days)'})
+                                labels={'review_score': 'Review Score', 'delivery_time_days': 'Average Delivery Time (Days)'},text_auto=True)
         
         fig_delivery_review.update_layout(
             plot_bgcolor="#5f71f9", 
             paper_bgcolor="#1A1A1D",
-            font=dict(color="#1C78D5", size=14)
+            font=dict(color="#02080E", size=14)
         )
         fig_delivery_review.update_xaxes(
             title_font=dict(color="#8eb2eb"),
