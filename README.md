@@ -44,6 +44,12 @@ The app provides a comprehensive view of sales, delivery performance, and custom
   - All KPIs and charts update based on selected filters
 
 ---
+# project screenshots
+- KPIs and Revenue over time
+![KPIs](./img/screenshot1.png "")
+-  reviews overview and Orders by Customer Location
+![customer reviews](./img/screenshot2.png)
+---
 
 ## Tech Stack
 
